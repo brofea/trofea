@@ -1,4 +1,6 @@
-# 每日题目推荐 QQ Bot Worker
+# 香芋派，菠萝派的替身
+
+## 目前功能
 
 基于 Cloudflare Worker 的 QQ Bot 后端：每日按北京时间从公开 GitHub 仓库读取 Markdown，向配置的 QQ 群推送「今日谜题 / 今日知识 / 今日故事」，并通过 QQ Bot Webhook 处理群内指令。
 
@@ -10,14 +12,14 @@ QQ 平台细节被隔离在适配层；业务层（内容获取、Front Matter �
 
 ```
 GitHub Raw ── ContentService ── MessageBuilder ── DailyService ──┐
-                                          │                    │
-                                          CommandRouter        ▼
-                                          │            MessageSender (接口)
-QQ Bot Webhook ── Webhook 校验/路由 ──────┘                    │
-                                                                ▼
-                                                         QQBotAdapter
-                                                  (token / 群消息)
-                                                                │
+                                          │                      │
+                                    CommandRouter                ▼
+                                          │              MessageSender (接口)
+ QQ Bot Webhook ── Webhook 校验/路由 ──────┘                      │
+                                                                 ▼
+                                                           QQBotAdapter
+                                                          (token / 群消息)
+                                                                 │
                                                           QQ Bot OpenAPI
 ```
 
