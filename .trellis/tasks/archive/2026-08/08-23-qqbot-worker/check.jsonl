@@ -1,0 +1,5 @@
+{"file":".trellis/spec/guides/index.md","reason":"质量检查时确认共享规范范围。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查模块间是否重复实现解析、配置和消息常量。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 Webhook/Cron 到业务层再到 QQ 适配层的数据流、错误和格式契约。"}
+{"file":".trellis/spec/worker/index.md","reason":"质量检查时确认 Worker 层的测试、构建和安全要求。"}
+{"file":".trellis/spec/worker/qqbot-worker-contract.md","reason":"按可执行契约检查 Webhook 握手、签名、Cron、内容错误与测试覆盖。"}

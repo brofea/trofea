@@ -1,0 +1,5 @@
+{"file":".trellis/spec/guides/index.md","reason":"共享规范索引，确认单仓库项目与适用思维指南。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"新增 Worker 模块与配置时，避免重复常量、解析和适配逻辑。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"任务跨越 Worker handler、业务服务、内容解析和 QQ API 适配层，需要显式定义边界契约。"}
+{"file":".trellis/spec/worker/index.md","reason":"Worker 层质量门禁与项目结构约定。"}
+{"file":".trellis/spec/worker/qqbot-worker-contract.md","reason":"QQ Webhook、环境变量、Cron 和消息适配的可执行跨层契约。"}
