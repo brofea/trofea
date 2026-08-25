@@ -55,6 +55,13 @@ function signCallbackVerification(input: {
 - Cloudflare Cron 的星期字段是 1-7（1=周日、7=周六），与标准 cron 的 0=周日不同；本项目用 3 字母缩写（`MON-FRI` / `SAT` / `SUN`）表达星期以避免歧义。
 - 当日文件不存在、上游失败或内容无效时记录诊断错误并跳过发送，不回退旧内容。
 
+### 部署形态
+
+同一套业务逻辑（webhook 验签、每日推送、内容解析、QQ 发送）在两个运行时上运行，入口分别为 `src/index.ts`（Cloudflare Worker）与 `scf/index.ts`（腾讯云 SCF），依赖图经 `src/bootstrap.ts` 的 `buildServices` / `handleVerifiedEvent` / `runDailyPush` 共用，行为保持一致。
+
+- Cloudflare Worker：`scheduled` 由 `wrangler.jsonc` 的 5 字段 cron 触发（`0 0 * * MON-FRI`、`0 2 * * SAT`、`0 2 * * SUN`，星期用 3 字母缩写）。
+- 腾讯云 SCF：单事件函数，`main_handler` 按 `event.Type === "Timer"` 分流到每日推送，其余按函数 URL HTTP 事件处理。定时触发器用 7 字段 cron `秒 分 时 日 月 星期 年`，星期 `0-6`/`SUN-SAT`（0=周日），按 UTC+8 运行：工作日 08:00 `0 0 8 ? * MON-FRI *`、周六 10:00 `0 0 10 ? * SAT *`、周日 10:00 `0 0 10 ? * SUN *`。函数 URL 事件中 `event.body` 为原始字符串（非 base64），`event.headers` key 可能全小写（签名头需大小写不敏感查找），响应返回集成响应 `{ statusCode, headers, body }`。
+
 ## 4. Validation & Error Matrix
 
 | 条件 | 行为 |
