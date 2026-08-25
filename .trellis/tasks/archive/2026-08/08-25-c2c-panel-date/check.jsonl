@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/worker/index.md", "reason": "质量检查清单：测试、类型检查、构建"}
+{"file": ".trellis/spec/worker/qqbot-worker-contract.md", "reason": "验证 QQ API 调用、事件处理、测试覆盖是否符合规范"}
