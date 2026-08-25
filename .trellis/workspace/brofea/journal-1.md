@@ -73,3 +73,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Fix historical non-puzzle command
+
+**Date**: 2026-08-25
+**Task**: Fix historical non-puzzle command
+**Branch**: `refactor/sfc`
+
+### Summary
+
+Fixed GitHub issue #2 so /历史谜题 returns knowledge and story content with a no-puzzle notice, added regression coverage, and documented the command contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f800a4e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
