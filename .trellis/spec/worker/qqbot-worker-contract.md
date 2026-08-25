@@ -50,9 +50,9 @@ function signCallbackVerification(input: {
 
 ### Cron
 
-- 工作日 08:00 北京时间：`0 0 * * 1-5`。
-- 周末 10:00 北京时间：周日 `0 2 * * 0`、周六 `0 2 * * 6`。
-- Cloudflare Cron 不支持星期字段的逗号分隔（如 `0,6`），必须拆成多条表达式。
+- 工作日 08:00 北京时间：`0 0 * * MON-FRI`。
+- 周末 10:00 北京时间：周六 `0 2 * * SAT`、周日 `0 2 * * SUN`。
+- Cloudflare Cron 的星期字段是 1-7（1=周日、7=周六），与标准 cron 的 0=周日不同；本项目用 3 字母缩写（`MON-FRI` / `SAT` / `SUN`）表达星期以避免歧义。
 - 当日文件不存在、上游失败或内容无效时记录诊断错误并跳过发送，不回退旧内容。
 
 ## 4. Validation & Error Matrix
