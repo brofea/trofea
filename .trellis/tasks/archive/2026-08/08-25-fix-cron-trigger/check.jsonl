@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/worker/index.md", "reason": "worker spec 索引：Quality Check 要求 Cron 变更同步 README 与契约文档"}
+{"file": ".trellis/spec/worker/qqbot-worker-contract.md", "reason": "校验 Cron 契约描述与新表达式一致"}
