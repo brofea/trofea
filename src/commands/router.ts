@@ -47,7 +47,7 @@ export class CommandRouter {
       return {
         message: {
           kind: "text",
-          text: "使用方法：\n\n/历史谜题 YYYY-MM-DD\n\n例如：\n/历史谜题 2026-08-20",
+          text: "使用方法：\n\n/历史谜题 YYYY-MM-DD\n/历史谜题 YYYYMMDD\n/历史谜题 MMDD（自动使用当前年份）\n\n例如：\n/历史谜题 2026-08-20\n/历史谜题 20260820\n/历史谜题 0820",
         },
       };
     }
@@ -57,12 +57,12 @@ export class CommandRouter {
       return {
         message: {
           kind: "text",
-          text: "日期格式错误，请使用：/历史谜题 YYYY-MM-DD",
+          text: "日期格式错误，请使用：\n/历史谜题 YYYY-MM-DD\n/历史谜题 YYYYMMDD\n/历史谜题 MMDD",
         },
       };
     }
 
-    if (dateText > formatDate(this.deps.today)) {
+    if (formatDate(date) > formatDate(this.deps.today)) {
       return { message: { kind: "text", text: "未来的谜题还不能偷看哦。" } };
     }
 
