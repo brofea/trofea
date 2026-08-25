@@ -31,8 +31,8 @@ GitHub Raw ── ContentService ── MessageBuilder ── DailyService ─�
 - `src/content/service.ts` — 从 `CONTENT_BASE_URL/YYYY-MM-DD.md` 获取并解析。
 - `src/message/builder.ts` — 三种消息模板（保留 Markdown 正文）。
 - `src/daily/service.ts` — 调度编排：当日内容 → 配置的群。
-- `src/commands/router.ts` — `/今日谜题` 指令。
-- `src/adapter/qqbot.ts` — `QQBotAdapter`：access_token 缓存、v2 群消息发送。
+- `src/commands/router.ts` — `/今日谜题`、`/聊天ID` 指令。
+- `src/adapter/qqbot.ts` — `QQBotAdapter`：access_token 缓存、v2 群/私聊消息发送。
 - `src/adapter/webhook.ts` — Ed25519 事件签名校验、回调地址校验签名、事件解析。
 - `src/adapter/types.ts` — `MessageSender` 接口、`WebhookEvent`。
 - `src/index.ts` — Worker 入口（`fetch` + `scheduled`）。
@@ -124,12 +124,13 @@ QQ_BOT_SECRET=your_app_secret
 
 - **鉴权**：`POST https://api.bot.qq.com/app/getAppAccessToken`，body `{ appId, clientSecret }` → `{ access_token, expires_in }`。调用 OpenAPI 时头 `Authorization: QQBot <access_token>`。
 - **发群消息**：`POST https://api.bot.qq.com/v2/groups/{group_openid}/messages`，body `{ msg_type, markdown|content, msg_id?, msg_seq? }`（`msg_type=2` Markdown / `0` 纯文本）。
+- **发私聊消息**：`POST https://api.bot.qq.com/v2/users/{user_openid}/messages`，body 字段与群消息一致，用于 C2C 被动回复（`/聊天ID` 等）。
 - **Webhook 事件签名校验**：Ed25519。`seed = 重复 botSecret 至 ≥32 字节取前 32`；`publicKey = Ed25519.fromSeed(seed)`；`msg = timestamp + rawBody`；`verify(publicKey, msg, hexDecode(X-Signature-Ed25519))`。缺失/非法签名一律 401。
 - **回调地址校验**：配置回调时 QQ 发 `{"op":13,"d":{"plain_token","event_ts"}}`（不带 `X-Signature` 头），Worker 用 Bot Secret 派生的私钥对 `event_ts + plain_token` 签名，回填 `{"plain_token","signature"}`（hex）。此校验在事件签名校验之前处理。
 
 ### 与 PRD 抽象的关系
 
-PRD 要求“发送接口不把业务层锁死在平台字段名上”。`MessageSender` 接口只接受 `OutboundMessage`（`kind` + `text`）与群 openid 参数，`msg_type` / `markdown` / `group_openid` 等 QQ 字段仅存在于 `QQBotAdapter`，业务层无感知。
+PRD 要求“发送接口不把业务层锁死在平台字段名上”。`MessageSender` 接口只接受 `OutboundMessage`（`kind` + `text`）与目标 openid 参数（群 `sendToGroup` / 私聊 `sendToUser`），`msg_type` / `markdown` / `group_openid` 等 QQ 字段仅存在于 `QQBotAdapter`，业务层无感知。
 
 > **已知限制**：群消息 Markdown（`msg_type=2`）需机器人在开放平台具备 Markdown 权限并通过审核；被动回复需在群内 @ 机器人事件中携带 `msg_id`（5 分钟有效，每条最多回复 5 次）。若后续 QQ Markdown 兼容不足，在适配层增加转换层即可，业务层与消息模板不变。
 
@@ -137,9 +138,12 @@ PRD 要求“发送接口不把业务层锁死在平台字段名上”。`Messag
 
 ## 指令（最小安全入口）
 
-仅处理群 `GROUP_AT_MESSAGE_CREATE` 事件中的命令文本（已去除 `<@!数字>` 前缀）：
+处理群 `GROUP_AT_MESSAGE_CREATE` 与私聊 `C2C_MESSAGE_CREATE` 事件中的命令文本（群消息已去除 `<@!数字>` 前缀）：
 
 - `/今日谜题` — 返回当日内容；若当日非 `puzzle`，按 PRD §6.2 追加 `今天没有谜题，休息一下吧`。
+- `/聊天ID` — 直接回复 openid，无需日志：
+  - 群 @：回复「群 openid: xxx」+「发送者 openid: xxx」
+  - 私聊：回复「发送者 openid: xxx」
 
 未识别命令/不支持事件：返回 200 不回复，不崩溃。
 
@@ -174,7 +178,7 @@ npm run dev              # wrangler dev
 | `content`         | URL 构造、404/5xx/网络错误/空体                                   |
 | `adapter`         | token 获取+缓存、群请求体、失败诊断、Ed25519 签名往返、回调地址校验签名、事件路由 |
 | `daily`           | 多群推送、缺失/上游错误跳过、不泄漏平台字段                       |
-| `router`          | `/今日谜题`、未知命令不回复                                       |
+| `router`          | `/今日谜题`、`/聊天ID`（群/私聊/无上下文）、未知命令不回复            |
 | `entry`           | 401 无签名、回调地址校验回填、未知事件不崩溃、`DEBUG_LOG_IDS` 调试开关打印 openid |
 
 > 真实 QQ API 鉴权/消息发送受外部凭据限制，未在 CI 联网验证；适配器以契约级桩（记录 fetch 调用 + 真实 Ed25519 签名往返）覆盖。

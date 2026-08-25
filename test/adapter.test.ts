@@ -112,6 +112,55 @@ describe("QQBotAdapter token + send", () => {
   });
 });
 
+describe("QQBotAdapter sendToUser (C2C)", () => {
+  it("POSTs to /v2/users/<openid>/messages with Authorization header", async () => {
+    let tokenCalls = 0;
+    let sendMethod = "";
+    let sendUrl = "";
+    let authHeader = "";
+    let sendBody: Record<string, unknown> | null = null;
+    const fetchLike = recordingFetch((url, init) => {
+      if (url.endsWith("/app/getAppAccessToken")) {
+        tokenCalls++;
+        return Response.json({ access_token: TOKEN, expires_in: 7200 });
+      }
+      if (url.includes("/v2/users/u1/messages")) {
+        sendMethod = init.method ?? "";
+        sendUrl = url;
+        authHeader = (init.headers as Record<string, string>).Authorization ?? "";
+        sendBody = JSON.parse(init.body as string);
+        return Response.json({ id: "ROBOT1.0_c2c" });
+      }
+      return new Response("no", { status: 404 });
+    });
+    const a = new QQBotAdapter("APP", "SECRET", fetchLike);
+    const r = await a.sendToUser("u1", { kind: "text", text: "发送者 openid: u1" });
+    expect(r.ok).toBe(true);
+    expect(r.messageId).toBe("ROBOT1.0_c2c");
+    expect(tokenCalls).toBe(1);
+    expect(sendMethod).toBe("POST");
+    expect(sendUrl).toBe("https://api.bot.qq.com/v2/users/u1/messages");
+    expect(authHeader).toBe(`QQBot ${TOKEN}`);
+    expect(sendBody).toMatchObject({ msg_type: 0, content: "发送者 openid: u1" });
+  });
+
+  it("URL-encodes the user openid", async () => {
+    let sendUrl = "";
+    const fetchLike = recordingFetch((url) => {
+      if (url.endsWith("/app/getAppAccessToken"))
+        return Response.json({ access_token: TOKEN, expires_in: 7200 });
+      if (url.includes("/v2/users/")) {
+        sendUrl = url;
+        return Response.json({ id: "m" });
+      }
+      return new Response("no", { status: 404 });
+    });
+    const a = new QQBotAdapter("APP", "S", fetchLike);
+    await a.sendToUser("u/1 x", { kind: "text", text: "hi" });
+    expect(sendUrl).toBe("https://api.bot.qq.com/v2/users/u%2F1%20x/messages");
+  });
+});
+
 describe("webhook signature verification", () => {
   it("verifies a real Ed25519 signature round-trip", () => {
     const timestamp = "1725442341";

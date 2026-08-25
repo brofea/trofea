@@ -9,6 +9,7 @@
 ```ts
 interface MessageSender {
   sendToGroup(groupId: string, message: OutboundMessage, opts?: SendOptions): Promise<SendResult>;
+  sendToUser(userOpenid: string, message: OutboundMessage, opts?: SendOptions): Promise<SendResult>;
 }
 
 function parseFrontMatter(markdown: string): ParsedContent;
@@ -45,8 +46,9 @@ function signCallbackVerification(input: {
 - 回调校验请求：`{"op":13,"d":{"plain_token":"...","event_ts":"..."}}`，不要求 `X-Signature-*` 头。响应为 `{"plain_token":"...","signature":"..."}`。
 - 回调校验签名：用 Secret 派生 Ed25519 私钥，对 `event_ts + plain_token` 签名并返回小写 hex。
 - 普通事件：使用 `X-Signature-Timestamp + 原始请求体` 验证 `X-Signature-Ed25519`，缺失/非法时返回 HTTP 401。
-- 已验证的未知事件返回 200 且不发送消息；群 @ 事件只路由最小 `/今日谜题` 指令。
-- 事件解析提取 `author.user_openid`（群 @ / 私聊）与 `author.member_openid`（群 @）到 `WebhookEvent.userOpenid` / `memberOpenid`，供调试日志使用。
+- 已验证的未知事件返回 200 且不发送消息；群 @ 与私聊事件均路由命令（`/今日谜题`、`/聊天ID`）。
+- `/聊天ID` 命令（群聊与私聊均可用，无需 content 依赖）：群 @ 回复「群 openid: xxx」+「发送者 openid: xxx」，私聊回复「发送者 openid: xxx」；无上下文时回复「未获取到 ID」。命令始终可用，不受 `DEBUG_LOG_IDS` 开关控制。
+- 事件解析提取 `author.user_openid`（群 @ / 私聊）与 `author.member_openid`（群 @）到 `WebhookEvent.userOpenid` / `memberOpenid`，供调试日志与 `/聊天ID` 命令使用。
 
 ### Cron
 
@@ -88,6 +90,7 @@ function signCallbackVerification(input: {
 - 内容服务：日期 URL、404、非 2xx、网络错误。
 - Daily：成功推送、多群、缺失/上游错误跳过、业务层不泄漏 QQ 字段。
 - Webhook：独立复算 op=13 `event_ts + plain_token` 签名；无签名头握手成功；普通事件缺失/篡改签名拒绝；未知事件不崩溃。
+- 命令：`/聊天ID` 在群 / 私聊 / 无上下文三种输入下返回正确 ID 文本；`QQBotAdapter.sendToUser` 构造正确 URL（`POST /v2/users/<openid>/messages`）与 `Authorization: QQBot <token>` 头并回填 `messageId`。
 - 工程：`npm test`、`npm run typecheck`、`npm run build` 必须通过。
 
 ## 7. Wrong vs Correct
