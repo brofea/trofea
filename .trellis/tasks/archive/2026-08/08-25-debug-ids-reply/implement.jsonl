@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/worker/index.md", "reason": "worker spec 索引：新增命令与私聊发送接口，需同步 README 与契约文档"}
+{"file": ".trellis/spec/worker/qqbot-worker-contract.md", "reason": "worker 契约文档：新增命令与 MessageSender 接口契约需同步"}
