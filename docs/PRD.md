@@ -446,9 +446,12 @@ Cloudflare Worker Variables：
 ## QQ 配置
 
 ```
-QQ_APP_ID
-QQ_CLIENT_SECRET
+QQ_BOT_ID
+QQ_BOT_SECRET
 ```
+
+- `QQ_BOT_ID`：开放平台 AppID。
+- `QQ_BOT_SECRET`：开放平台 AppSecret，同时用于 access_token 换取（作为 clientSecret）与 Webhook Ed25519 签名校验。
 
 ---
 

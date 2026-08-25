@@ -35,8 +35,8 @@ export class QQBotAdapter implements MessageSender {
   private expiresAt = 0;
 
   constructor(
-    private readonly appId: string,
-    private readonly clientSecret: string,
+    private readonly botId: string,
+    private readonly botSecret: string,
     private readonly fetchLike: FetchLike,
   ) {}
 
@@ -112,8 +112,8 @@ export class QQBotAdapter implements MessageSender {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({
-          appId: this.appId,
-          clientSecret: this.clientSecret,
+          appId: this.botId,
+          clientSecret: this.botSecret,
         }),
       });
     } catch (e) {

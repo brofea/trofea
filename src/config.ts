@@ -9,9 +9,8 @@ import type { Env } from "./env.js";
 export interface AppConfig {
   contentBaseUrl: string;
   groupIds: string[];
-  qqAppId: string;
-  qqClientSecret: string;
-  qqBotSecret: string;
+  botId: string;
+  botSecret: string;
   timezone: string;
   /** 一次性调试开关：为 true 时在 Webhook 命中群 @ / 私聊事件后打印 openid。 */
   debugLogIds: boolean;
@@ -43,15 +42,14 @@ export function loadConfig(env: Env): AppConfig {
     throw new Error("配置缺失: CONTENT_BASE_URL");
   }
   const contentBaseUrl = rawBaseUrl.replace(/\/?$/, "/");
-  if (!env.QQ_APP_ID || !env.QQ_CLIENT_SECRET) {
-    throw new Error("配置缺失: QQ_APP_ID / QQ_CLIENT_SECRET");
+  if (!env.QQ_BOT_ID || !env.QQ_BOT_SECRET) {
+    throw new Error("配置缺失: QQ_BOT_ID / QQ_BOT_SECRET");
   }
   return {
     contentBaseUrl,
     groupIds: parseGroupIds(env.GROUP_IDS ?? ""),
-    qqAppId: env.QQ_APP_ID,
-    qqClientSecret: env.QQ_CLIENT_SECRET,
-    qqBotSecret: env.QQ_BOT_SECRET ?? "",
+    botId: env.QQ_BOT_ID,
+    botSecret: env.QQ_BOT_SECRET,
     timezone: env.TIMEZONE ?? "Asia/Shanghai",
     debugLogIds: (env.DEBUG_LOG_IDS ?? "").trim().toLowerCase() === "true",
   };

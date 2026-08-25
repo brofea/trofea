@@ -33,7 +33,7 @@ function signCallbackVerification(input: {
 - `CONTENT_BASE_URL`: GitHub Raw 内容目录；Worker 追加 `YYYY-MM-DD.md`。
 - `GROUP_IDS`: JSON 数组或逗号分隔的群 `openid`。
 - `TIMEZONE`: 当前部署提示值，MVP 按北京时间 UTC+8 解释日期。
-- `QQ_APP_ID`、`QQ_CLIENT_SECRET`、`QQ_BOT_SECRET`: Secret，不提交到仓库。
+- `QQ_BOT_ID`（AppID）、`QQ_BOT_SECRET`（AppSecret，access_token 与 webhook 签名共用）: Secret，不提交到仓库。
 - `DEBUG_LOG_IDS`: 一次性调试开关（`vars`，默认 `"false"`）。值为 `"true"`（不区分大小写）时，群 @ 事件打印 `groupOpenid` + `userOpenid`，私聊事件打印 `userOpenid`，均含事件类型、不含消息正文；其它值/缺省不打印。
 
 ### Content

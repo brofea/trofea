@@ -10,8 +10,7 @@ function env(): Env {
     CONTENT_BASE_URL: "https://raw.example.com/content/",
     GROUP_IDS: '["g1"]',
     TIMEZONE: "Asia/Shanghai",
-    QQ_APP_ID: "APP",
-    QQ_CLIENT_SECRET: "SECRET",
+    QQ_BOT_ID: "APP",
     QQ_BOT_SECRET: SECRET,
   };
 }

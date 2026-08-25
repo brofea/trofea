@@ -21,8 +21,8 @@ function buildServices(env: Env, fetchLike: FetchLike) {
   const config = loadConfig(env);
   const content = new ContentService(config.contentBaseUrl, fetchLike);
   const sender = new QQBotAdapter(
-    config.qqAppId,
-    config.qqClientSecret,
+    config.botId,
+    config.botSecret,
     fetchLike,
   );
   return { config, content, sender };
@@ -36,7 +36,7 @@ export default {
 
     const rawBody = await req.text();
     const result = handleWebhook({
-      botSecret: config.qqBotSecret,
+      botSecret: config.botSecret,
       signatureHex: req.headers.get("X-Signature-Ed25519") ?? "",
       timestamp: req.headers.get("X-Signature-Timestamp") ?? "",
       rawBody,

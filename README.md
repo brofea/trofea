@@ -104,19 +104,16 @@ Cloudflare Cron 使用 UTC。北京时间 UTC+8 的换算：
 ### 敏感凭证（用 Secret 注入，不要写入仓库）
 
 ```bash
-npx wrangler secret put QQ_APP_ID          # 开放平台 AppID
-npx wrangler secret put QQ_CLIENT_SECRET   # 开放平台 ClientSecret（access_token 用）
-npx wrangler secret put QQ_BOT_SECRET       # Webhook Ed25519 签名校验用的 Bot Secret
+npx wrangler secret put QQ_BOT_ID      # 开放平台 AppID
+npx wrangler secret put QQ_BOT_SECRET  # 开放平台 AppSecret（access_token 与 webhook 签名共用）
 ```
 
-> `QQ_APP_ID` / `QQ_CLIENT_SECRET` 用于调用 `https://api.bot.qq.com/app/getAppAccessToken` 换取 `access_token`（默认 7200s，缓存到过期前 60s 刷新）。
-> `QQ_BOT_SECRET` 用于事件签名校验（`X-Signature-Ed25519` / `X-Signature-Timestamp`）与回调地址校验签名（`event_ts + plain_token`），均按官方算法从 secret 派生 Ed25519 密钥。
+> `QQ_BOT_SECRET`（AppSecret）一值两用：作为 `clientSecret` 调用 `https://api.bot.qq.com/app/getAppAccessToken` 换取 `access_token`（默认 7200s，缓存到过期前 60s 刷新）；同时用于事件签名校验（`X-Signature-Ed25519` / `X-Signature-Timestamp`）与回调地址校验签名（`event_ts + plain_token`），均按官方算法从 secret 派生 Ed25519 密钥。
 本地开发可用 `.dev.vars`（已被 `.gitignore` 忽略）：
 
 ```ini
-QQ_APP_ID=your_app_id
-QQ_CLIENT_SECRET=your_client_secret
-QQ_BOT_SECRET=your_bot_secret
+QQ_BOT_ID=your_app_id
+QQ_BOT_SECRET=your_app_secret
 ```
 
 ---
@@ -189,8 +186,7 @@ npm run dev              # wrangler dev
 ```bash
 # 1. 配置非敏感变量（已在 wrangler.jsonc 的 vars 中，按需改默认值）
 # 2. 注入敏感凭证
-npx wrangler secret put QQ_APP_ID
-npx wrangler secret put QQ_CLIENT_SECRET
+npx wrangler secret put QQ_BOT_ID
 npx wrangler secret put QQ_BOT_SECRET
 
 # 3. 部署
@@ -198,7 +194,7 @@ npm run deploy          # wrangler deploy
 
 # 4. 在 QQ 开放平台管理端配置 Webhook 回调地址
 #    https://<your-worker>.workers.dev/
-#    并记录/确认 Bot Secret（与 QQ_BOT_SECRET 一致）
+#    并记录/确认 AppSecret（与 QQ_BOT_SECRET 一致）
 ```
 
 Cron 由 Cloudflare 按 `wrangler.jsonc` 的 `triggers.crons` 自动调度，无需额外配置。
