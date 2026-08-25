@@ -49,6 +49,56 @@ function signCallbackVerification(input: {
 
 `/历史谜题 <date>` 必须返回指定日期的内容：当内容为 `knowledge` 或 `story` 时，返回原有 Markdown，且在标题前加上 `这一天没有谜题`；仅在内容缺失时返回无内容提示。
 
+### Future History Access
+
+#### 1. Scope / Trigger
+
+Applies when handling `/历史谜题 <future-date>` from a verified QQ message event.
+
+#### 2. Signatures
+
+```ts
+interface CommandRouterDeps {
+  isC2c: boolean;
+  senderOpenid?: string;
+  adminOpenid: string;
+}
+```
+
+#### 3. Contracts
+
+`isC2c` must derive from `event.type === "C2C_MESSAGE_CREATE"`; `senderOpenid` must be the verified event sender; `adminOpenid` is `ADMIN_OPENID` from the loaded application configuration.
+
+#### 4. Validation & Error Matrix
+
+| Condition | Result |
+| --- | --- |
+| Future date, C2C, exact sender/admin OpenID match | Fetch and render the requested content normally. |
+| Future date, C2C, missing or non-matching sender OpenID | Return `未来的谜题还不能偷看哦。` |
+| Future date, group message, including the administrator | Return `未来的谜题还不能偷看哦。` |
+| Historical or current date | Keep the normal history behavior. |
+
+#### 5. Good / Base / Bad Cases
+
+- Good: The configured administrator sends a C2C `/历史谜题` request for a future puzzle and receives its normal Markdown rendering.
+- Base: A non-administrator sends the same C2C request and receives the existing future-date rejection.
+- Bad: Granting future access based only on a matching OpenID without requiring C2C would expose future content in group messages.
+
+#### 6. Tests Required
+
+- Command router tests cover authorized admin C2C content and unavailable-content responses.
+- Webhook-to-router tests cover non-admin C2C rejection and administrator group rejection.
+
+#### 7. Wrong vs Correct
+
+```ts
+// Wrong: permits the administrator in a group.
+const canViewFuture = senderOpenid === adminOpenid;
+
+// Correct: only an administrator in C2C receives the exception.
+const canViewFuture = isC2c && senderOpenid === adminOpenid;
+```
+
 ## 5. WebHook
 
 - `op=13` 回调校验优先于普通签名校验；用 `event_ts + plain_token` 签名并返回 `plain_token` 与 `signature`。

@@ -42,17 +42,23 @@ export async function handleVerifiedEvent(
     });
   }
 
-  const isGroup = event.type === "GROUP_AT_MESSAGE_CREATE";
-  const target = isGroup ? event.groupOpenid : event.userOpenid;
+  const isC2c = event.type === "C2C_MESSAGE_CREATE";
+  const target = isC2c ? event.userOpenid : event.groupOpenid;
   if (!target) return;
 
-  const router = new CommandRouter({ content: services.content, today: now });
+  const router = new CommandRouter({
+    content: services.content,
+    today: now,
+    isC2c,
+    senderOpenid: event.userOpenid,
+    adminOpenid: services.config.adminOpenid,
+  });
   const outcome = await router.handle(event.content);
   if (!outcome) return;
 
-  const result = isGroup
-    ? await services.sender.sendToGroup(target, outcome.message, { msgId: event.msgId })
-    : await services.sender.sendToUser(target, outcome.message, { msgId: event.msgId });
+  const result = isC2c
+    ? await services.sender.sendToUser(target, outcome.message, { msgId: event.msgId })
+    : await services.sender.sendToGroup(target, outcome.message, { msgId: event.msgId });
   if (!result.ok) {
     console.error(`[command] reply failed: ${result.error ?? "unknown error"}`);
   }

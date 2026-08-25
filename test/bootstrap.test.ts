@@ -20,6 +20,7 @@ function makeServices() {
     },
     content: new ContentService(BASE, mockFetch({
       [`${BASE}/2026-08-23.md`]: { body: "---\ntype: puzzle\nsource: https://x\n---\n题" },
+      [`${BASE}/2026-08-24.md`]: { body: "---\ntype: puzzle\nsource: https://x\n---\n未来题" },
     })),
     sender: {
       async sendToGroup(_id, message, options) {
@@ -63,5 +64,37 @@ describe("handleVerifiedEvent", () => {
       content: "/历史谜题",
     }, NOW);
     expect(calls.user[0]).toContain("使用方法");
+  });
+
+  it("allows future history only for the administrator in C2C", async () => {
+    const { services, calls } = makeServices();
+
+    await handleVerifiedEvent(services, {
+      type: "C2C_MESSAGE_CREATE",
+      data: {},
+      userOpenid: "not-admin",
+      msgId: "non-admin-c2c-incoming",
+      content: "/历史谜题 2026-08-24",
+    }, NOW);
+    expect(calls.user[0]).toContain("未来");
+
+    await handleVerifiedEvent(services, {
+      type: "C2C_MESSAGE_CREATE",
+      data: {},
+      userOpenid: "admin",
+      msgId: "c2c-incoming",
+      content: "/历史谜题 2026-08-24",
+    }, NOW);
+    expect(calls.user[1]).toContain("未来题");
+
+    await handleVerifiedEvent(services, {
+      type: "GROUP_AT_MESSAGE_CREATE",
+      data: {},
+      groupOpenid: "g1",
+      userOpenid: "admin",
+      msgId: "group-incoming",
+      content: "/历史谜题 2026-08-24",
+    }, NOW);
+    expect(calls.group[0]).toContain("未来");
   });
 });

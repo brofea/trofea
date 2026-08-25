@@ -7,6 +7,9 @@ import { formatDate, parseDateString } from "../utils/date.js";
 export interface CommandRouterDeps {
   content: ContentService;
   today: Date;
+  isC2c: boolean;
+  senderOpenid?: string;
+  adminOpenid: string;
 }
 
 export interface CommandOutcome {
@@ -62,7 +65,7 @@ export class CommandRouter {
       };
     }
 
-    if (formatDate(date) > formatDate(this.deps.today)) {
+    if (formatDate(date) > formatDate(this.deps.today) && !this.canViewFutureHistory()) {
       return { message: { kind: "text", text: "未来的谜题还不能偷看哦。" } };
     }
 
@@ -84,6 +87,10 @@ export class CommandRouter {
       }
       throw error;
     }
+  }
+
+  private canViewFutureHistory(): boolean {
+    return this.deps.isC2c && this.deps.senderOpenid === this.deps.adminOpenid;
   }
 }
 
