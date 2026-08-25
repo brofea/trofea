@@ -149,6 +149,32 @@ PRD 要求“发送接口不把业务层锁死在平台字段名上”。`Messag
 
 ---
 
+## 配置菜单/指令面板
+
+单聊底部「自定义菜单」（C2C）与群聊「指令面板」按钮通过 QQ api-v2 的 REST 接口配置，用一个一次性本地脚本完成，不进运行时逻辑：
+
+```bash
+# 1. 用模板创建本地 .env（或手动新建）
+cp .env.example .env
+
+# 2. 编辑 .env，填入真实 QQ_BOT_ID / QQ_BOT_SECRET / GROUP_IDS
+
+# 3. 运行脚本
+node scripts/configure-menu.mjs
+```
+
+- 脚本启动时会自动加载仓库根目录的 `.env`（仅作为兜底：`process.env` 里已设置的同名变量优先，不会被 `.env` 覆盖）；也可以像之前一样直接在命令行内联传环境变量。
+- `QQ_BOT_ID` / `QQ_BOT_SECRET`：开放平台 AppID / AppSecret，只存在你的本地 `.env` 或 shell 环境变量里，脚本不落盘、不写入仓库。
+- `GROUP_IDS`：群 openid，支持 JSON 数组或逗号分隔（与运行时 `GROUP_IDS` 解析一致）。
+- 脚本流程：换取 `access_token` → `PUT /v2/menu` 配置单聊菜单（「今日谜题」「历史谜题」，整体覆盖，天然幂等）→ `GET /v2/panels?scope=group` 查已有面板 → 命中（`scope=group` 且 `target_type=specific` 且 `group_openids` 一致）则 `PUT /v2/panels/{panel_id}` 更新，否则 `POST /v2/panels` 新建。
+- 重复运行不会产生重复面板；每步打印 HTTP 状态与响应体，失败时非零退出并输出诊断。
+
+> `.env` 已被 `.gitignore` 忽略，切勿提交（含真实 AppSecret）。`.env.example` 只含占位值，可以提交。
+>
+> 本脚本仅为本机一次性配置工具，不影响 `npm run build` / `npm run build:scf` 与运行时逻辑。
+
+---
+
 ## 本地验证
 
 ```bash
