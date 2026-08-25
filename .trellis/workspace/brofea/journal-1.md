@@ -38,3 +38,38 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: 修复 Cloudflare cron 部署失败 + 新增 DEBUG_LOG_IDS 调试开关
+
+**Date**: 2026-08-25
+**Task**: 修复 Cloudflare cron 部署失败 + 新增 DEBUG_LOG_IDS 调试开关
+**Branch**: `main`
+
+### Summary
+
+1) 拆分非法 cron 表达式 0 2 * * 0,6 为 0 2 * * 0 / 0 2 * * 6，修复 Cloudflare 部署失败；2) 新增 DEBUG_LOG_IDS 环境变量开关，开启后群@/私聊打印群openid与user_openid到日志；3) 升级 opencode 插件到 1.18.18。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5d480e3` | (see git log) |
+| `0a46985` | (see git log) |
+| `88b6e08` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
