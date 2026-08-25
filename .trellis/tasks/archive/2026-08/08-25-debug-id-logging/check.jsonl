@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/worker/index.md", "reason": "worker spec 索引：Quality Check 要求环境变量变更同步文档"}
+{"file": ".trellis/spec/worker/qqbot-worker-contract.md", "reason": "校验环境变量与 Webhook 契约描述与实现一致"}
