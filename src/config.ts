@@ -1,56 +1,39 @@
 import type { Env } from "./env.js";
 
-/**
- * 将 Worker 绑定的 Env 解析为强类型运行配置。
- *
- * 集中解析的好处（code-reuse 指南）：所有模块只看 AppConfig，
- * 不各自重复解析 `GROUP_IDS` JSON、不各自假设字段缺失默认值。
- */
 export interface AppConfig {
   contentBaseUrl: string;
   groupIds: string[];
-  botId: string;
-  botSecret: string;
-  timezone: string;
-  /** 一次性调试开关：为 true 时在 Webhook 命中群 @ / 私聊事件后打印 openid。 */
-  debugLogIds: boolean;
+  appId: string;
+  appSecret: string;
+  adminOpenid: string;
 }
 
-
 function parseGroupIds(raw: string): string[] {
-  const trimmed = raw.trim();
-  if (!trimmed) return [];
-  // 兼容 JSON 数组与逗号分隔两种写法。
-  if (trimmed.startsWith("[")) {
-    try {
-      const arr = JSON.parse(trimmed) as unknown;
-      if (!Array.isArray(arr)) throw new Error("not array");
-      return arr.filter((x): x is string => typeof x === "string");
-    } catch {
-      // 回退到逗号分隔，避免单一格式错误使整个 Worker 不可用。
-    }
-  }
-  return trimmed
+  return raw
     .split(",")
-    .map((s) => s.trim())
+    .map((value) => value.trim())
     .filter(Boolean);
 }
 
 export function loadConfig(env: Env): AppConfig {
-  const rawBaseUrl = env.CONTENT_BASE_URL ?? "";
-  if (!rawBaseUrl) {
-    throw new Error("配置缺失: CONTENT_BASE_URL");
+  const contentBaseUrl = env.CONTENT_BASE_URL.trim().replace(/\/+$/, "");
+  const groupIds = parseGroupIds(env.GROUP_IDS ?? "");
+  const appId = env.QQ_BOT_APP_ID.trim();
+  const appSecret = env.QQ_BOT_APP_SECRET.trim();
+  const adminOpenid = env.ADMIN_OPENID.trim();
+
+  const missing = [
+    ["CONTENT_BASE_URL", contentBaseUrl],
+    ["GROUP_IDS", groupIds.length > 0 ? "configured" : ""],
+    ["QQ_BOT_APP_ID", appId],
+    ["QQ_BOT_APP_SECRET", appSecret],
+    ["ADMIN_OPENID", adminOpenid],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(`配置缺失: ${missing.join(", ")}`);
   }
-  const contentBaseUrl = rawBaseUrl.replace(/\/?$/, "/");
-  if (!env.QQ_BOT_ID || !env.QQ_BOT_SECRET) {
-    throw new Error("配置缺失: QQ_BOT_ID / QQ_BOT_SECRET");
-  }
-  return {
-    contentBaseUrl,
-    groupIds: parseGroupIds(env.GROUP_IDS ?? ""),
-    botId: env.QQ_BOT_ID,
-    botSecret: env.QQ_BOT_SECRET,
-    timezone: env.TIMEZONE ?? "Asia/Shanghai",
-    debugLogIds: (env.DEBUG_LOG_IDS ?? "").trim().toLowerCase() === "true",
-  };
+
+  return { contentBaseUrl, groupIds, appId, appSecret, adminOpenid };
 }

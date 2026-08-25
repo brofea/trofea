@@ -11,14 +11,18 @@ import { parseFrontMatter } from "../utils/frontmatter.js";
  * 调度层负责跳过发送，不回退旧内容。
  */
 export class ContentService {
+  private readonly contentBaseUrl: string;
+
   constructor(
-    private readonly contentBaseUrl: string,
+    contentBaseUrl: string,
     private readonly fetchLike: FetchLike,
-  ) {}
+  ) {
+    this.contentBaseUrl = contentBaseUrl.replace(/\/+$/, "");
+  }
 
   /** 构造某日期的内容文件 Raw URL。纯逻辑，便于测试。 */
   urlFor(date: Date): string {
-    return `${this.contentBaseUrl}${formatDate(date)}.md`;
+    return `${this.contentBaseUrl}/${formatDate(date)}.md`;
   }
 
   /** 获取并解析某日期的内容。404 → ContentNotFoundError；其它失败 → UpstreamError。 */

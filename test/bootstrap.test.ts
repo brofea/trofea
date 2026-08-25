@@ -5,90 +5,63 @@ import type { Services } from "../src/bootstrap.js";
 import { ContentService } from "../src/content/service.js";
 import { mockFetch } from "./helpers.js";
 
-const BASE = "https://raw.example.com/content/";
+const BASE = "https://raw.example.com/content";
 const NOW = new Date("2026-08-23T00:00:00Z");
 
 function makeServices() {
-  const calls: { group: string[]; user: string[] } = { group: [], user: [] };
+  const calls: { group: string[]; user: string[]; options: unknown[] } = { group: [], user: [], options: [] };
   const services: Services = {
     config: {
       contentBaseUrl: BASE,
       groupIds: ["g1"],
-      botId: "APP",
-      botSecret: "SECRET",
-      timezone: "Asia/Shanghai",
-      debugLogIds: false,
+      appId: "app",
+      appSecret: "secret",
+      adminOpenid: "admin",
     },
-    content: new ContentService(BASE, mockFetch({})),
+    content: new ContentService(BASE, mockFetch({
+      [`${BASE}/2026-08-23.md`]: { body: "---\ntype: puzzle\nsource: https://x\n---\n题" },
+    })),
     sender: {
-      async sendToGroup(_gid: string, message: { text: string }) {
+      async sendToGroup(_id, message, options) {
         calls.group.push(message.text);
-        return { ok: true, messageId: "mg" };
+        calls.options.push(options);
+        return { ok: true };
       },
-      async sendToUser(_uid: string, message: { text: string }) {
+      async sendToUser(_id, message, options) {
         calls.user.push(message.text);
-        return { ok: true, messageId: "mu" };
+        calls.options.push(options);
+        return { ok: true };
       },
     },
   };
   return { services, calls };
 }
 
-describe("handleVerifiedEvent command routing", () => {
-  it("group /聊天ID replies via sendToGroup with both ids", async () => {
+describe("handleVerifiedEvent", () => {
+  it("routes a group command and preserves msg_id for passive reply", async () => {
     const { services, calls } = makeServices();
     const event: WebhookEvent = {
       type: "GROUP_AT_MESSAGE_CREATE",
       data: {},
       groupOpenid: "g1",
-      msgId: "MSG1",
-      content: "/聊天ID",
       userOpenid: "u1",
-      memberOpenid: "m1",
+      msgId: "incoming",
+      content: "/今日谜题",
     };
     await handleVerifiedEvent(services, event, NOW);
-    expect(calls.group).toEqual(["群 openid: g1\n发送者 openid: u1"]);
-    expect(calls.user).toHaveLength(0);
+    expect(calls.group[0]).toContain("【今日谜题】");
+    expect(calls.options[0]).toEqual({ msgId: "incoming" });
   });
 
-  it("C2C /聊天ID replies via sendToUser with sender id", async () => {
+  it("routes a C2C command to the sender", async () => {
     const { services, calls } = makeServices();
-    const event: WebhookEvent = {
+    await handleVerifiedEvent(services, {
       type: "C2C_MESSAGE_CREATE",
       data: {},
-      msgId: "MSG2",
-      content: "/聊天ID",
-      userOpenid: "u2",
-    };
-    await handleVerifiedEvent(services, event, NOW);
-    expect(calls.user).toEqual(["发送者 openid: u2"]);
-    expect(calls.group).toHaveLength(0);
-  });
-
-  it("C2C without userOpenid is skipped", async () => {
-    const { services, calls } = makeServices();
-    const event: WebhookEvent = {
-      type: "C2C_MESSAGE_CREATE",
-      data: {},
-      content: "/聊天ID",
-    };
-    await handleVerifiedEvent(services, event, NOW);
-    expect(calls.user).toHaveLength(0);
-    expect(calls.group).toHaveLength(0);
-  });
-
-  it("unknown command replies to neither target", async () => {
-    const { services, calls } = makeServices();
-    const event: WebhookEvent = {
-      type: "GROUP_AT_MESSAGE_CREATE",
-      data: {},
-      groupOpenid: "g1",
-      msgId: "MSG3",
-      content: "/未知",
       userOpenid: "u1",
-    };
-    await handleVerifiedEvent(services, event, NOW);
-    expect(calls.group).toHaveLength(0);
-    expect(calls.user).toHaveLength(0);
+      msgId: "incoming",
+      content: "/历史谜题",
+    }, NOW);
+    expect(calls.user[0]).toContain("使用方法");
   });
 });

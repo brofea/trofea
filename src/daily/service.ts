@@ -1,21 +1,16 @@
-import { ContentNotFoundError, UpstreamError } from "../errors.js";
-import type { ContentService } from "../content/service.js";
-import type { OutboundMessage, SendResult } from "../types.js";
-import { buildMessage } from "../message/builder.js";
+import { ContentNotFoundError, FrontMatterError, UpstreamError } from "../errors.js";
 import type { MessageSender } from "../adapter/types.js";
+import type { ContentService } from "../content/service.js";
+import { buildInventoryWarning, buildMessage } from "../message/builder.js";
+import type { SendResult } from "../types.js";
+import { addDays, formatDate } from "../utils/date.js";
 
-/**
- * 每日推送服务（应用层）。
- *
- * 依赖 ContentService 与 MessageSender 抽象，不直接接触 QQ API 或 fetch。
- * 错误策略（已批准决策）：当日缺失/上游不可用 → 记录诊断错误并跳过，
- * 不回退旧内容、不发未确认占位内容。
- */
 export interface DailyDeps {
   content: ContentService;
   sender: MessageSender;
   groupIds: string[];
-  log: (msg: string, extra?: unknown) => void;
+  adminOpenid: string;
+  log: (message: string, extra?: unknown) => void;
 }
 
 export interface DailyResult {
@@ -23,52 +18,93 @@ export interface DailyResult {
   pushed: string[];
   skipped: boolean;
   reason?: string;
+  inventoryCount: number;
+  inventoryMissing: string[];
   results: SendResult[];
 }
 
 export class DailyService {
   constructor(private readonly deps: DailyDeps) {}
 
-  /** 执行当日推送：拉取并构建当日内容消息 → 发往配置的群。 */
-  async run(today: Date): Promise<DailyResult> {
-    const { content, sender, groupIds, log } = this.deps;
-    const dateStr = today.toISOString().slice(0, 10);
-
-    let message: OutboundMessage | null = null;
+  async run(now: Date): Promise<DailyResult> {
+    const { content, sender, groupIds, adminOpenid, log } = this.deps;
+    const date = formatDate(now);
+    const results: SendResult[] = [];
+    const pushed: string[] = [];
     let skipped = false;
     let reason: string | undefined;
-    let pushed: string[] = [];
-    const results: SendResult[] = [];
 
     try {
-      const parsed = await content.fetchContent(today);
-      message = buildMessage(parsed);
-    } catch (e) {
+      const today = await content.fetchContent(now);
+      const message = buildMessage(today);
+      for (const groupId of groupIds) {
+        try {
+          const result = await sender.sendToGroup(groupId, message);
+          results.push(result);
+          if (result.ok) pushed.push(groupId);
+          else log(`群 ${groupId} 发送失败`, result.error);
+        } catch (error) {
+          log(`群 ${groupId} 发送异常`, String(error));
+        }
+      }
+    } catch (error) {
       skipped = true;
-      if (e instanceof ContentNotFoundError) {
-        reason = `当日内容不存在，跳过发送: ${e.date}`;
-        log(reason);
-      } else if (e instanceof UpstreamError) {
-        reason = `上游不可用，跳过发送: ${e.message}`;
-        log(reason);
+      if (error instanceof ContentNotFoundError) {
+        reason = `当日内容不存在，跳过发送: ${error.date}`;
+      } else if (error instanceof UpstreamError) {
+        reason = `上游不可用，跳过发送: ${error.message}`;
       } else {
-        reason = `内容解析失败，跳过发送: ${(e as Error).message}`;
-        log(reason);
+        reason = `内容解析失败，跳过发送: ${(error as Error).message}`;
       }
-    }
-
-    if (message && groupIds.length > 0) {
-      pushed = groupIds.slice();
-      for (const gid of groupIds) {
-        const r = await sender.sendToGroup(gid, message);
-        results.push(r);
-        if (!r.ok) log(`群 ${gid} 发送失败: ${r.error}`);
-      }
-    } else if (message) {
-      reason = "未配置群 ID，未发送";
       log(reason);
     }
 
-    return { date: dateStr, pushed, skipped, reason, results };
+    const inventory = await this.checkInventory(now, log);
+    if (!inventory.unavailable && inventory.count < 7) {
+      const warning = buildInventoryWarning(inventory.count, inventory.missing);
+      try {
+        const result = await sender.sendToUser(adminOpenid, warning);
+        if (!result.ok) log("管理员库存提醒失败", result.error);
+      } catch (error) {
+        log("管理员库存提醒异常", String(error));
+      }
+    }
+
+    return {
+      date,
+      pushed,
+      skipped,
+      reason,
+      inventoryCount: inventory.count,
+      inventoryMissing: inventory.missing,
+      results,
+    };
+  }
+
+  private async checkInventory(
+    today: Date,
+    log: (message: string, extra?: unknown) => void,
+  ): Promise<{ count: number; missing: string[]; unavailable: boolean }> {
+    let count = 0;
+    const missing: string[] = [];
+    for (let offset = 1; offset <= 7; offset += 1) {
+      const date = addDays(today, offset);
+      const dateText = formatDate(date);
+      try {
+        await this.deps.content.fetchContent(date);
+        count += 1;
+      } catch (error) {
+        if (error instanceof ContentNotFoundError || error instanceof FrontMatterError) {
+          missing.push(dateText);
+        } else if (error instanceof UpstreamError) {
+          log(`库存检查上游不可用，跳过本次提醒: ${dateText}`, error.message);
+          return { count, missing, unavailable: true };
+        } else {
+          log(`库存检查失败，跳过本次提醒: ${dateText}`, String(error));
+          return { count, missing, unavailable: true };
+        }
+      }
+    }
+    return { count, missing, unavailable: false };
   }
 }
