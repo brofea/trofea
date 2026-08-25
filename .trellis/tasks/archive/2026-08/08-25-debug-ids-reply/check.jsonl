@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/worker/index.md", "reason": "worker spec 索引：Quality Check 要求命令/接口变更同步文档"}
+{"file": ".trellis/spec/worker/qqbot-worker-contract.md", "reason": "校验 MessageSender 接口与命令契约描述一致"}
