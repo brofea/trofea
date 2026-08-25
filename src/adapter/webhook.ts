@@ -82,7 +82,7 @@ export function signCallbackVerification(opts: {
 }
 
 /**
- * 解析 Webhook 事件。对未知事件不抛错（PRD：不支持的事件不会导致 Worker 崩溃）。
+ * 解析 Webhook 事件。对未知事件不抛错（PRD：不支持的事件不会导致 SCF 崩溃）。
  * 签名校验在外部完成；此函数只做结构解析与最小路由信息提取。
  */
 export function parseWebhookEvent(rawBody: string): WebhookEvent | null {

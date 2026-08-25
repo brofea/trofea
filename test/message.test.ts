@@ -1,46 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { buildCommandMessage, buildMessage } from "../src/message/builder.js";
-import { PUZZLE_ENCOURAGEMENT } from "../src/types.js";
+import { buildCommandMessage, buildInventoryWarning, buildMessage } from "../src/message/builder.js";
 
-const puzzle = {
-  type: "puzzle" as const,
-  source: "https://example.com/p1",
-  body: "题目正文",
-  raw: "",
-};
+const puzzle = { type: "puzzle" as const, source: "https://example.com/p", body: "题目", raw: "" };
 
-describe("buildMessage", () => {
-  it("puzzle: title + body + 鼓励语 + source", () => {
-    const m = buildMessage(puzzle);
-    expect(m.kind).toBe("markdown");
-    expect(m.text).toBe(
-      `【今日谜题】\n\n题目正文\n\n${PUZZLE_ENCOURAGEMENT}\n\n原题链接：\nhttps://example.com/p1`,
+describe("message builders", () => {
+  it("uses the PRD puzzle template", () => {
+    expect(buildMessage(puzzle).text).toBe(
+      "【今日谜题】\n\n题目\n\n欢迎各位尝试实现，有任何疑问欢迎提问！\n原题链接：https://example.com/p",
     );
   });
 
-  it("knowledge: title + body, no ending", () => {
-    const m = buildMessage({ ...puzzle, type: "knowledge", source: undefined });
-    expect(m.text).toBe("【今日知识】\n\n题目正文");
+  it("adds the no-puzzle note only for command knowledge/story", () => {
+    expect(buildCommandMessage({ ...puzzle, type: "knowledge", source: undefined }).text)
+      .toContain("今天没有谜题，休息一下吧");
+    expect(buildMessage({ ...puzzle, type: "story", source: undefined }).text)
+      .toBe("【今日故事】\n\n题目");
   });
 
-  it("story: title + body, no ending", () => {
-    const m = buildMessage({ ...puzzle, type: "story", source: undefined });
-    expect(m.text).toBe("【今日故事】\n\n题目正文");
-  });
-
-  it("preserves markdown body", () => {
-    const body = "## H\n\n- a\n- b";
-    expect(buildMessage({ ...puzzle, body }).text).toContain(body);
-  });
-});
-
-describe("buildCommandMessage", () => {
-  it("puzzle unchanged", () => {
-    expect(buildCommandMessage(puzzle).text).toBe(buildMessage(puzzle).text);
-  });
-
-  it("non-puzzle appends rest note", () => {
-    const m = buildCommandMessage({ ...puzzle, type: "knowledge", source: undefined });
-    expect(m.text).toMatch(/今天没有谜题，休息一下吧$/);
+  it("builds the inventory warning", () => {
+    expect(buildInventoryWarning(5, ["2026-08-29", "2026-08-31"]).text)
+      .toContain("未来 7 天仅准备了 5/7 份内容");
   });
 });

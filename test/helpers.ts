@@ -1,51 +1,34 @@
-import type { FetchLike } from "../src/types.js";
+import type { FetchLike, OutboundMessage, SendOptions } from "../src/types.js";
 
-/** 构造可控 fetch：按 URL 映射到 status + body。 */
 export function mockFetch(
   routes: Record<string, { status?: number; body?: string }>,
-  opts?: { networkError?: (url: string) => Error | undefined },
+  networkError?: Error,
 ): FetchLike {
   return {
-    fetch: async (input: RequestInfo | URL, _init?: RequestInit) => {
+    fetch: async (input) => {
+      if (networkError) throw networkError;
       const url = typeof input === "string" ? input : input.toString();
-      const netErr = opts?.networkError?.(url);
-      if (netErr) throw netErr;
       const route = routes[url];
-      if (!route) {
-        return new Response("not found", { status: 404 });
-      }
-      return new Response(route.body ?? "", {
-        status: route.status ?? 200,
-      });
+      if (!route) return new Response("not found", { status: 404 });
+      return new Response(route.body ?? "", { status: route.status ?? 200 });
     },
   };
 }
 
-/** 记录调用的 MessageSender 桩。 */
 export function mockSender() {
-  const calls: {
-    group: { id: string; text: string; msgId?: string }[];
-    user: { id: string; text: string; msgId?: string }[];
-  } = { group: [], user: [] };
-  return {
-    calls,
-    sender: {
-      async sendToGroup(
-        groupId: string,
-        message: { text: string },
-        opts?: { msgId?: string },
-      ) {
-        calls.group.push({ id: groupId, text: message.text, msgId: opts?.msgId });
-        return { ok: true, messageId: `msg-${calls.group.length}` };
-      },
-      async sendToUser(
-        userOpenid: string,
-        message: { text: string },
-        opts?: { msgId?: string },
-      ) {
-        calls.user.push({ id: userOpenid, text: message.text, msgId: opts?.msgId });
-        return { ok: true, messageId: `msg-${calls.user.length}` };
-      },
+  const calls = {
+    group: [] as { id: string; message: OutboundMessage; options?: SendOptions }[],
+    user: [] as { id: string; message: OutboundMessage; options?: SendOptions }[],
+  };
+  const sender = {
+    async sendToGroup(id: string, message: OutboundMessage, options?: SendOptions) {
+      calls.group.push({ id, message, options });
+      return { ok: true, messageId: `group-${calls.group.length}` };
+    },
+    async sendToUser(id: string, message: OutboundMessage, options?: SendOptions) {
+      calls.user.push({ id, message, options });
+      return { ok: true, messageId: `user-${calls.user.length}` };
     },
   };
+  return { calls, sender };
 }
