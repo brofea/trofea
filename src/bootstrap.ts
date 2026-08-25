@@ -35,6 +35,13 @@ export async function handleVerifiedEvent(
   }
   if (!event.content) return;
 
+  // Set up command panel for C2C users
+  if (event.type === "C2C_MESSAGE_CREATE" && event.userOpenid && services.sender instanceof QQBotAdapter) {
+    await services.sender.setUserCommandPanel(event.userOpenid).catch(err => {
+      console.warn("[c2c-panel] setup failed", { userOpenid: event.userOpenid, error: err.message });
+    });
+  }
+
   const isGroup = event.type === "GROUP_AT_MESSAGE_CREATE";
   const target = isGroup ? event.groupOpenid : event.userOpenid;
   if (!target) return;

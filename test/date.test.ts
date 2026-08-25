@@ -13,4 +13,27 @@ describe("Beijing date helpers", () => {
     expect(parseDateString("2026-02-31")).toBeNull();
     expect(parseDateString("2026-8-3")).toBeNull();
   });
+
+  it("parses YYYYMMDD format", () => {
+    const result = parseDateString("20260825");
+    expect(result).not.toBeNull();
+    expect(formatDate(result!)).toBe("2026-08-25");
+  });
+
+  it("parses MMDD format using current year", () => {
+    const now = new Date();
+    const currentYear = toBeijingParts(now).year;
+    const result = parseDateString("0825");
+    expect(result).not.toBeNull();
+    expect(formatDate(result!)).toBe(`${currentYear}-08-25`);
+  });
+
+  it("rejects invalid dates in YYYYMMDD format", () => {
+    expect(parseDateString("20260231")).toBeNull();
+  });
+
+  it("rejects invalid dates in MMDD format", () => {
+    expect(parseDateString("0231")).toBeNull();
+    expect(parseDateString("1301")).toBeNull();
+  });
 });

@@ -25,6 +25,21 @@ export function formatDate(date: Date): string {
 }
 
 export function parseDateString(value: string): Date | null {
+  // YYYYMMDD format (8 digits)
+  if (/^\d{8}$/.test(value)) {
+    const formatted = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
+    return parseDateString(formatted);
+  }
+  
+  // MMDD format (4 digits) - use current year
+  if (/^\d{4}$/.test(value)) {
+    const now = new Date();
+    const currentYear = toBeijingParts(now).year;
+    const formatted = `${currentYear}-${value.slice(0, 2)}-${value.slice(2, 4)}`;
+    return parseDateString(formatted);
+  }
+  
+  // YYYY-MM-DD format (standard)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const date = new Date(`${value}T00:00:00+08:00`);
   return Number.isNaN(date.getTime()) || formatDate(date) !== value ? null : date;

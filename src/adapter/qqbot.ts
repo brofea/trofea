@@ -25,6 +25,34 @@ export class QQBotAdapter implements MessageSender {
     return this.send(`/v2/users/${encodeURIComponent(userOpenid)}/messages`, userOpenid, message, options);
   }
 
+  async setUserCommandPanel(userOpenid: string): Promise<void> {
+    try {
+      const response = await this.client.request(
+        "PUT",
+        `/v2/users/${encodeURIComponent(userOpenid)}/panels/commands`,
+        {
+          items: [
+            { type: "command", name: "/今日谜题", desc: "获取今日谜题" },
+            { type: "command", name: "/历史谜题", desc: "查看历史谜题" },
+          ],
+        },
+      );
+      if (!response.ok) {
+        const body = await readResponseBody(response);
+        console.warn("[c2c-panel] API failed", {
+          userOpenid,
+          status: response.status,
+          body: formatBody(body),
+        });
+      }
+    } catch (error) {
+      console.warn("[c2c-panel] request failed", {
+        userOpenid,
+        error: String(error),
+      });
+    }
+  }
+
   private async send(
     path: string,
     target: string,
