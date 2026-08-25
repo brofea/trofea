@@ -106,3 +106,36 @@ Fixed GitHub issue #2 so /历史谜题 returns knowledge and story content with 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 管理员私聊未来谜题查询
+
+**Date**: 2026-08-25
+**Task**: 管理员私聊未来谜题查询
+**Branch**: `main`
+
+### Summary
+
+允许 ADMIN_OPENID 仅在私聊中查询未来历史谜题；群聊与非管理员仍受未来日期限制，并补充契约和回归测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ab02e34` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
