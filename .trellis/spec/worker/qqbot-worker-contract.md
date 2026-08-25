@@ -34,6 +34,7 @@ function signCallbackVerification(input: {
 - `GROUP_IDS`: JSON 数组或逗号分隔的群 `openid`。
 - `TIMEZONE`: 当前部署提示值，MVP 按北京时间 UTC+8 解释日期。
 - `QQ_APP_ID`、`QQ_CLIENT_SECRET`、`QQ_BOT_SECRET`: Secret，不提交到仓库。
+- `DEBUG_LOG_IDS`: 一次性调试开关（`vars`，默认 `"false"`）。值为 `"true"`（不区分大小写）时，群 @ 事件打印 `groupOpenid` + `userOpenid`，私聊事件打印 `userOpenid`，均含事件类型、不含消息正文；其它值/缺省不打印。
 
 ### Content
 
@@ -45,6 +46,7 @@ function signCallbackVerification(input: {
 - 回调校验签名：用 Secret 派生 Ed25519 私钥，对 `event_ts + plain_token` 签名并返回小写 hex。
 - 普通事件：使用 `X-Signature-Timestamp + 原始请求体` 验证 `X-Signature-Ed25519`，缺失/非法时返回 HTTP 401。
 - 已验证的未知事件返回 200 且不发送消息；群 @ 事件只路由最小 `/今日谜题` 指令。
+- 事件解析提取 `author.user_openid`（群 @ / 私聊）与 `author.member_openid`（群 @）到 `WebhookEvent.userOpenid` / `memberOpenid`，供调试日志使用。
 
 ### Cron
 

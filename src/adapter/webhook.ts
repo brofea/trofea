@@ -116,6 +116,13 @@ export function parseWebhookEvent(rawBody: string): WebhookEvent | null {
           : undefined;
     const content = typeof d.content === "string" ? d.content : undefined;
     event.content = content?.replace(/<@!\d+>/g, "").trim() || undefined;
+    if (typeof d.author === "object" && d.author !== null) {
+      const author = d.author as Record<string, unknown>;
+      event.userOpenid =
+        typeof author.user_openid === "string" ? author.user_openid : undefined;
+      event.memberOpenid =
+        typeof author.member_openid === "string" ? author.member_openid : undefined;
+    }
   }
   return event;
 }

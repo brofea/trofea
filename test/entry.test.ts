@@ -34,6 +34,22 @@ async function call(req: Request) {
   return { status: res.status, body: await res.text() };
 }
 
+async function callWithEnv(req: Request, e: Env) {
+  const res = await worker.fetch(req, e, { waitUntil: vi.fn() } as never);
+  return { status: res.status, body: await res.text() };
+}
+
+function signedRequest(rawBody: string, ts: string): Request {
+  return new Request("https://bot/", {
+    method: "POST",
+    body: rawBody,
+    headers: {
+      "X-Signature-Ed25519": sign(ts, rawBody),
+      "X-Signature-Timestamp": ts,
+    },
+  });
+}
+
 describe("Worker fetch handler (safe paths)", () => {
   it("rejects requests missing signature headers with 401", async () => {
     const req = new Request("https://bot/", {
@@ -80,5 +96,80 @@ describe("Worker fetch handler (safe paths)", () => {
     });
     const r = await call(req);
     expect(r.status).toBe(200);
+  });
+
+  it("logs group/user openids when DEBUG_LOG_IDS=true for group @ event", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const rawBody = JSON.stringify({
+      op: 0,
+      t: "GROUP_AT_MESSAGE_CREATE",
+      d: {
+        id: "MSG1",
+        group_openid: "g9",
+        content: "hello",
+        author: { user_openid: "u9", member_openid: "m9" },
+      },
+    });
+    const r = await callWithEnv(signedRequest(rawBody, "1702"), {
+      ...env(),
+      DEBUG_LOG_IDS: "true",
+    });
+    expect(r.status).toBe(200);
+    const logs = logSpy.mock.calls.map((c) => c.join(" "));
+    expect(
+      logs.some(
+        (l) =>
+          l.includes("[debug-ids]") &&
+          l.includes("GROUP_AT_MESSAGE_CREATE") &&
+          l.includes("groupOpenid=g9") &&
+          l.includes("userOpenid=u9"),
+      ),
+    ).toBe(true);
+    // 不打印消息正文。
+    expect(logs.some((l) => l.includes("hello"))).toBe(false);
+    logSpy.mockRestore();
+  });
+
+  it("logs user openid when DEBUG_LOG_IDS=true for C2C event", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const rawBody = JSON.stringify({
+      op: 0,
+      t: "C2C_MESSAGE_CREATE",
+      d: { author: { user_openid: "u2" } },
+    });
+    const r = await callWithEnv(signedRequest(rawBody, "1703"), {
+      ...env(),
+      DEBUG_LOG_IDS: "TRUE",
+    });
+    expect(r.status).toBe(200);
+    const logs = logSpy.mock.calls.map((c) => c.join(" "));
+    expect(
+      logs.some(
+        (l) =>
+          l.includes("[debug-ids]") &&
+          l.includes("C2C_MESSAGE_CREATE") &&
+          l.includes("userOpenid=u2"),
+      ),
+    ).toBe(true);
+    logSpy.mockRestore();
+  });
+
+  it("does not log openids when DEBUG_LOG_IDS is absent or not 'true'", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const rawBody = JSON.stringify({
+      op: 0,
+      t: "GROUP_AT_MESSAGE_CREATE",
+      d: {
+        id: "MSG1",
+        group_openid: "g9",
+        content: "hello",
+        author: { user_openid: "u9" },
+      },
+    });
+    const r = await call(signedRequest(rawBody, "1704"));
+    expect(r.status).toBe(200);
+    const logs = logSpy.mock.calls.map((c) => c.join(" "));
+    expect(logs.some((l) => l.includes("[debug-ids]"))).toBe(false);
+    logSpy.mockRestore();
   });
 });

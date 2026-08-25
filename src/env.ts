@@ -12,4 +12,6 @@ export interface Env {
   QQ_CLIENT_SECRET: string;
   /** Webhook 签名校验用的 Bot Secret（Ed25519 seed 来源）。 */
   QQ_BOT_SECRET: string;
+  /** 一次性调试开关：值为 "true"（不区分大小写）时打印群/用户 openid，用完关闭。 */
+  DEBUG_LOG_IDS?: string;
 }

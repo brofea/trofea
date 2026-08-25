@@ -255,6 +255,35 @@ describe("parseWebhookEvent", () => {
     expect(e?.content).toBe("/今日谜题");
   });
 
+  it("extracts author openids from group @ message", () => {
+    const e = parseWebhookEvent(
+      JSON.stringify({
+        op: 0,
+        t: "GROUP_AT_MESSAGE_CREATE",
+        d: {
+          id: "MSG1",
+          group_openid: "g1",
+          content: "<@!42> /今日谜题",
+          author: { user_openid: "u1", member_openid: "m1" },
+        },
+      }),
+    );
+    expect(e?.userOpenid).toBe("u1");
+    expect(e?.memberOpenid).toBe("m1");
+  });
+
+  it("extracts author user_openid from C2C message", () => {
+    const e = parseWebhookEvent(
+      JSON.stringify({
+        op: 0,
+        t: "C2C_MESSAGE_CREATE",
+        d: { author: { user_openid: "u2" } },
+      }),
+    );
+    expect(e?.userOpenid).toBe("u2");
+    expect(e?.memberOpenid).toBeUndefined();
+  });
+
   it("returns null for invalid json", () => {
     expect(parseWebhookEvent("{bad")).toBeNull();
   });

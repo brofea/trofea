@@ -26,6 +26,10 @@ export interface WebhookEvent {
   msgId?: string;
   /** 命令文本（已去除 @ 机器人前缀，按需）。 */
   content?: string;
+  /** 发送者 user_openid（群 @ 与私聊事件均有）。 */
+  userOpenid?: string;
+  /** 发送者 member_openid（仅群事件）。 */
+  memberOpenid?: string;
 }
 
 export type { OutboundMessage, SendOptions, SendResult };

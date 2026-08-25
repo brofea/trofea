@@ -13,6 +13,8 @@ export interface AppConfig {
   qqClientSecret: string;
   qqBotSecret: string;
   timezone: string;
+  /** 一次性调试开关：为 true 时在 Webhook 命中群 @ / 私聊事件后打印 openid。 */
+  debugLogIds: boolean;
 }
 
 
@@ -51,5 +53,6 @@ export function loadConfig(env: Env): AppConfig {
     qqClientSecret: env.QQ_CLIENT_SECRET,
     qqBotSecret: env.QQ_BOT_SECRET ?? "",
     timezone: env.TIMEZONE ?? "Asia/Shanghai",
+    debugLogIds: (env.DEBUG_LOG_IDS ?? "").trim().toLowerCase() === "true",
   };
 }

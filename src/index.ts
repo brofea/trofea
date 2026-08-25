@@ -56,6 +56,19 @@ export default {
       // 解析失败的未知事件不崩溃。
       return new Response("ok", { status: 200 });
     }
+    // 一次性调试开关：开启时打印群/用户 openid（不含消息正文），用于首次部署发现 ID。
+    if (
+      config.debugLogIds &&
+      (event.type === "GROUP_AT_MESSAGE_CREATE" || event.type === "C2C_MESSAGE_CREATE")
+    ) {
+      if (event.type === "GROUP_AT_MESSAGE_CREATE") {
+        console.log(
+          `[debug-ids] ${event.type} groupOpenid=${event.groupOpenid ?? ""} userOpenid=${event.userOpenid ?? ""}`,
+        );
+      } else {
+        console.log(`[debug-ids] ${event.type} userOpenid=${event.userOpenid ?? ""}`);
+      }
+    }
     // 仅处理群 @ 消息中的命令（最小安全入口）。
     if (event.type === "GROUP_AT_MESSAGE_CREATE" && event.content && event.groupOpenid) {
       const router = new CommandRouter({

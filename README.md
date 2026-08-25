@@ -99,6 +99,7 @@ Cloudflare Cron 使用 UTC。北京时间 UTC+8 的换算：
 | `CONTENT_BASE_URL` | GitHub Raw 内容目录（末尾可带可不带 `/`）      | `https://raw.githubusercontent.com/user/repo/main/content/` |
 | `GROUP_IDS`        | 群 openid，JSON 数组或逗号分隔                 | `["group_openid_1","group_openid_2"]`             |
 | `TIMEZONE`         | 提示用，代码内固定 UTC+8                       | `Asia/Shanghai`                                   |
+| `DEBUG_LOG_IDS`    | 一次性调试开关：`"true"`（不区分大小写）时在群 @ / 私聊事件打印群/用户 openid，用完改回 `"false"` | `false`                                           |
 
 ### 敏感凭证（用 Secret 注入，不要写入仓库）
 
@@ -156,7 +157,7 @@ npm install
 # 2. 类型检查
 npm run typecheck        # npx tsc --noEmit
 
-# 3. 单元 + handler 测试（51 项，覆盖解析/构建/日期/调度/上游错误/适配器请求/webhook）
+# 3. 单元 + handler 测试（56 项，覆盖解析/构建/日期/调度/上游错误/适配器请求/webhook）
 npm test                 # vitest run
 
 # 4. 构建校验（不部署，验证 Worker 在运行时可编译且 wrangler 配置/绑定/cron 正确）
@@ -177,7 +178,7 @@ npm run dev              # wrangler dev
 | `adapter`         | token 获取+缓存、群请求体、失败诊断、Ed25519 签名往返、回调地址校验签名、事件路由 |
 | `daily`           | 多群推送、缺失/上游错误跳过、不泄漏平台字段                       |
 | `router`          | `/今日谜题`、未知命令不回复                                       |
-| `entry`           | 401 无签名、回调地址校验回填、未知事件不崩溃                      |
+| `entry`           | 401 无签名、回调地址校验回填、未知事件不崩溃、`DEBUG_LOG_IDS` 调试开关打印 openid |
 
 > 真实 QQ API 鉴权/消息发送受外部凭据限制，未在 CI 联网验证；适配器以契约级桩（记录 fetch 调用 + 真实 Ed25519 签名往返）覆盖。
 
