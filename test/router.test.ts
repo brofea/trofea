@@ -45,4 +45,25 @@ describe("CommandRouter", () => {
   it("non-command text returns null", async () => {
     expect(await router({}).handle("hello there")).toBeNull();
   });
+
+  it("/聊天ID with group context → both ids", async () => {
+    const r = await router({}).handle("/聊天ID", {
+      groupOpenid: "g1",
+      userOpenid: "u1",
+    });
+    expect(r?.message).toEqual({
+      kind: "text",
+      text: "群 openid: g1\n发送者 openid: u1",
+    });
+  });
+
+  it("/聊天ID with C2C context → sender id only", async () => {
+    const r = await router({}).handle("/聊天ID", { userOpenid: "u2" });
+    expect(r?.message).toEqual({ kind: "text", text: "发送者 openid: u2" });
+  });
+
+  it("/聊天ID with no context → 未获取到 ID", async () => {
+    const r = await router({}).handle("/聊天ID");
+    expect(r?.message).toEqual({ kind: "text", text: "未获取到 ID" });
+  });
 });

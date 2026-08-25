@@ -11,6 +11,13 @@ export interface MessageSender {
     message: OutboundMessage,
     opts?: SendOptions,
   ): Promise<SendResult>;
+
+  /** 发送到私聊（C2C），目标为发送者 user_openid。 */
+  sendToUser(
+    userOpenid: string,
+    message: OutboundMessage,
+    opts?: SendOptions,
+  ): Promise<SendResult>;
 }
 
 /** 解析后的 Webhook 事件。 */

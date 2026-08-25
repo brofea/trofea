@@ -49,6 +49,14 @@ export class QQBotAdapter implements MessageSender {
     return this.send(url, groupId, message, opts);
   }
 
+  async sendToUser(
+    userOpenid: string,
+    message: OutboundMessage,
+    opts?: SendOptions,
+  ): Promise<SendResult> {
+    const url = `${API_BASE}/v2/users/${encodeURIComponent(userOpenid)}/messages`;
+    return this.send(url, userOpenid, message, opts);
+  }
 
   private async send(
     url: string,

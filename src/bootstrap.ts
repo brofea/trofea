@@ -1,5 +1,5 @@
 import { QQBotAdapter } from "./adapter/qqbot.js";
-import type { WebhookEvent } from "./adapter/types.js";
+import type { MessageSender, WebhookEvent } from "./adapter/types.js";
 import { CommandRouter } from "./commands/router.js";
 import type { AppConfig } from "./config.js";
 import { loadConfig } from "./config.js";
@@ -16,7 +16,7 @@ import type { FetchLike } from "./types.js";
 export interface Services {
   config: AppConfig;
   content: ContentService;
-  sender: QQBotAdapter;
+  sender: MessageSender;
 }
 
 /**
@@ -31,7 +31,7 @@ export function buildServices(env: Env, fetchLike: FetchLike): Services {
 }
 
 /**
- * 已验签事件的后续处理：调试开关打印 openid + 群 @ 指令路由。
+ * 已验签事件的后续处理：调试开关打印 openid + 群 @ / 私聊指令路由。
  * 两个运行时入口共用，保证行为一致。
  */
 export async function handleVerifiedEvent(
@@ -57,19 +57,35 @@ export async function handleVerifiedEvent(
       console.log(`[debug-ids] ${event.type} userOpenid=${event.userOpenid ?? ""}`);
     }
   }
-  // 仅处理群 @ 消息中的命令（最小安全入口）。
-  if (event.type === "GROUP_AT_MESSAGE_CREATE" && event.content && event.groupOpenid) {
+  // 群 @ 与私聊消息中的命令路由（最小安全入口）。
+  const isGroupCommand = event.type === "GROUP_AT_MESSAGE_CREATE";
+  const isC2cCommand = event.type === "C2C_MESSAGE_CREATE";
+  if ((isGroupCommand || isC2cCommand) && event.content) {
+    const target = isGroupCommand ? event.groupOpenid : event.userOpenid;
+    if (!target) {
+      // 群事件缺 groupOpenid / 私聊缺 userOpenid 时无法回复，跳过。
+      return;
+    }
     const router = new CommandRouter({
       content,
       today: now,
       log: (m) => console.log(m),
     });
     try {
-      const outcome = await router.handle(event.content);
+      const outcome = await router.handle(event.content, {
+        groupOpenid: event.groupOpenid,
+        userOpenid: event.userOpenid,
+      });
       if (outcome) {
-        await sender.sendToGroup(event.groupOpenid, outcome.message, {
-          msgId: event.msgId,
-        });
+        if (isGroupCommand) {
+          await sender.sendToGroup(target, outcome.message, {
+            msgId: event.msgId,
+          });
+        } else {
+          await sender.sendToUser(target, outcome.message, {
+            msgId: event.msgId,
+          });
+        }
       }
     } catch (e) {
       console.error(`命令处理失败: ${(e as Error).message}`);

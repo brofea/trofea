@@ -25,7 +25,8 @@ export function mockFetch(
 export function mockSender() {
   const calls: {
     group: { id: string; text: string; msgId?: string }[];
-  } = { group: [] };
+    user: { id: string; text: string; msgId?: string }[];
+  } = { group: [], user: [] };
   return {
     calls,
     sender: {
@@ -36,6 +37,14 @@ export function mockSender() {
       ) {
         calls.group.push({ id: groupId, text: message.text, msgId: opts?.msgId });
         return { ok: true, messageId: `msg-${calls.group.length}` };
+      },
+      async sendToUser(
+        userOpenid: string,
+        message: { text: string },
+        opts?: { msgId?: string },
+      ) {
+        calls.user.push({ id: userOpenid, text: message.text, msgId: opts?.msgId });
+        return { ok: true, messageId: `msg-${calls.user.length}` };
       },
     },
   };
