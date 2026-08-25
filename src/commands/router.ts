@@ -69,7 +69,13 @@ export class CommandRouter {
     try {
       const content = await this.deps.content.fetchContent(date);
       if (content.type !== "puzzle") {
-        return { message: { kind: "text", text: "这一天没有谜题。" } };
+        const message = buildMessage(content);
+        return {
+          message: {
+            kind: "markdown",
+            text: `这一天没有谜题\n\n${message.text}`,
+          },
+        };
       }
       return { message: buildMessage(content) };
     } catch (error) {

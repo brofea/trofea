@@ -47,6 +47,8 @@ function signCallbackVerification(input: {
 
 文件不存在或 Front Matter 无效视为缺失/无效内容。GitHub 网络失败是上游错误，不应误判为库存缺失。
 
+`/历史谜题 <date>` 必须返回指定日期的内容：当内容为 `knowledge` 或 `story` 时，返回原有 Markdown，且在标题前加上 `这一天没有谜题`；仅在内容缺失时返回无内容提示。
+
 ## 5. WebHook
 
 - `op=13` 回调校验优先于普通签名校验；用 `event_ts + plain_token` 签名并返回 `plain_token` 与 `signature`。
@@ -74,6 +76,7 @@ function signCallbackVerification(input: {
 
 - Front Matter：三种 type、缺 type、未知 type、puzzle 缺 source、坏 YAML、正文保留。
 - 消息构建：三种标题、puzzle 结尾、命令场景非 puzzle 提示、库存提醒。
+- 命令路由：历史 puzzle 的完整渲染不变；历史 `knowledge` 和 `story` 在 `这一天没有谜题` 提示后保留标题和正文。
 - 内容服务：北京时间日期 URL、404、非 2xx、网络错误。
 - QQ Adapter：Token/OpenAPI 两个地址、群/C2C 路径、被动 `msg_id`、主动消息。
 - WebHook：op=13、普通事件签名、非法签名、未知事件 ACK。

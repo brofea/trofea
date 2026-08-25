@@ -23,9 +23,29 @@ describe("CommandRouter", () => {
     const result = await router({
       [`${BASE}/2026-08-20.md`]: { body: "---\ntype: puzzle\nsource: https://x\n---\n历史" },
     }).handle("/历史谜题 2026-08-20");
-    expect(result?.message.text).toContain("历史");
+    expect(result?.message).toEqual({
+      kind: "markdown",
+      text: "【今日谜题】\n\n历史\n\n欢迎各位尝试实现，有任何疑问欢迎提问！\n原题链接：https://x",
+    });
     expect((await router({}).handle("/历史谜题 2026-08-24"))?.message.text)
       .toContain("未来");
+  });
+
+  it.each([
+    ["knowledge", "【今日知识】"],
+    ["story", "【今日故事】"],
+  ] as const)("returns historical %s content with a no-puzzle notice", async (type, title) => {
+    const result = await router({
+      [`${BASE}/2026-08-20.md`]: { body: `---\ntype: ${type}\n---\n历史内容` },
+    }).handle("/历史谜题 2026-08-20");
+
+    expect(result?.message).toMatchObject({ kind: "markdown" });
+    expect(result?.message.text).toContain("这一天没有谜题");
+    expect(result?.message.text).toContain(title);
+    expect(result?.message.text).toContain("历史内容");
+    expect(result?.message.text.indexOf("这一天没有谜题")).toBeLessThan(
+      result?.message.text.indexOf(title) ?? -1,
+    );
   });
 
   it("returns usage without a history date", async () => {
