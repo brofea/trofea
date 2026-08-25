@@ -28,8 +28,7 @@ export class ContentService {
     try {
       res = await this.fetchLike.fetch(url, {
         headers: { Accept: "text/plain, text/markdown; charset=utf-8" },
-        cf: { cacheTtl: 60 },
-      } as RequestInit);
+      });
     } catch (e) {
       throw new UpstreamError(`GitHub 请求失败: ${url}`, e);
     }

@@ -201,6 +201,66 @@ Cron 由 Cloudflare 按 `wrangler.jsonc` 的 `triggers.crons` 自动调度，无
 
 ---
 
+## 部署到腾讯云 SCF（事件函数 + 函数 URL + 定时触发器）
+
+`.workers.dev` 被墙导致 QQ 平台无法配置回调地址时，可改为部署到腾讯云 SCF。业务层（webhook 验签、每日推送、内容解析、QQ 发送）均平台无关，本项目新增 `scf/index.ts` 入口与 `build:scf` 打包脚本，Cloudflare 入口（`src/index.ts` + `wrangler.jsonc`）保持不变，两个运行时并存。
+
+### 运行环境
+
+- 函数类型：**事件函数**（Web 函数不支持定时触发器）。
+- 运行时：Node.js（20.19 或 18.15 均可），时区设为 `Asia/Shanghai`（不影响内容日期，代码内固定按 UTC+8 解释）。
+- 执行方法：`index.main_handler`（入口模块为 CommonJS，由 esbuild 打包输出）。
+
+### 环境变量
+
+与 Cloudflare 部署相同的 6 个变量，在函数「环境变量」中配置：
+
+| 变量               | 说明                                   |
+| ------------------ | -------------------------------------- |
+| `CONTENT_BASE_URL` | GitHub Raw 内容目录（末尾可带可不带 `/`） |
+| `GROUP_IDS`        | 群 openid，JSON 数组或逗号分隔          |
+| `TIMEZONE`         | 提示用，代码内固定 UTC+8                |
+| `QQ_BOT_ID`        | 开放平台 AppID（敏感）                  |
+| `QQ_BOT_SECRET`    | 开放平台 AppSecret（敏感，一值两用）    |
+| `DEBUG_LOG_IDS`    | 一次性调试开关，`"true"` 开启            |
+
+### 函数 URL 触发器（Webhook 回调）
+
+1. 为函数创建「函数 URL」触发器，得到形如 `https://<app-id>-<url-id>.<region>.tencentscf.com` 的地址。
+2. 将该地址填入 QQ 开放平台的 Webhook 回调地址。
+3. 回调地址校验（`op=13`）与事件签名校验逻辑沿用 Cloudflare 版本：入口从事件 `headers`/`body`/`httpMethod` 提取请求并调用 `handleWebhook`，按集成响应 `{ statusCode, headers, body }` 返回。
+
+### 定时触发器（每日推送）
+
+腾讯云定时触发器 cron 为 **7 字段** `秒 分 时 日 月 星期 年`，星期字段 `0-6`/`SUN-SAT`（**0=周日**），按 **UTC+8（北京时间）** 运行：
+
+| 北京时间       | Cron（7 字段）        |
+| -------------- | --------------------- |
+| 工作日 08:00   | `0 0 8 ? * MON-FRI *` |
+| 周六 10:00     | `0 0 10 ? * SAT *`    |
+| 周日 10:00     | `0 0 10 ? * SUN *`    |
+
+> 注意：日字段用 `?` 表示“不指定”，避免与星期字段同时指定具体值时产生“或”关系。
+
+### 上传 zip 步骤
+
+```bash
+# 1. 打包：产出单文件 dist-scf/index.js（bundle 了 js-yaml 与 tweetnacl，无需上传 node_modules）
+npm run build:scf
+
+# 2. 将 dist-scf/index.js 压缩为 zip（入口文件必须位于 zip 根目录，文件名 index.js）
+#    Windows 示例（PowerShell）：
+#    Compress-Archive -Path dist-scf/index.js -DestinationPath scf.zip
+#    该命令生成的 zip 中 index.js 位于根目录（单文件不包外层目录），符合 SCF 要求。
+
+# 3. 在控制台/API 上传 zip，并确认：
+#    - 执行方法：index.main_handler
+#    - 运行时：Node.js
+#    - 时区：Asia/Shanghai
+```
+
+---
+
 ## 依赖决策
 
 | 依赖          | 用途                        | 选择理由                                   |

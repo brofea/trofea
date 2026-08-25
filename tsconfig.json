@@ -17,6 +17,6 @@
     "noEmit": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "scf/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
